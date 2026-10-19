@@ -1,0 +1,6 @@
+{
+  "name": "AI Memory Explorer",
+  "description": "Cross-platform inspector and 2D/3D semantic landscape for AI agent memories with provider-independent adapters, vector similarity search, and high-reasoning knowledge audits.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
