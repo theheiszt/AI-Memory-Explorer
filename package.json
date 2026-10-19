@@ -10,7 +10,7 @@
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
     "build:ui": "vite build",
-    "build:electron": "esbuild electron/main.ts --bundle --platform=node --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:ssh2 --external:@google/genai --external:vite --format=cjs && esbuild electron/preload.ts --bundle --platform=node --target=node22 --outfile=dist-electron/preload.cjs --external:electron --format=cjs",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:vite --format=cjs && esbuild electron/preload.ts --bundle --platform=node --target=node22 --outfile=dist-electron/preload.cjs --external:electron --format=cjs",
     "build": "npm run build:ui && npm run build:electron",
     "electron:start": "npm run build && electron .",
     "package:win": "npm run build && electron-builder --win --x64",
@@ -76,7 +76,7 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.png"
     },
     "nsis": {
       "oneClick": false,
