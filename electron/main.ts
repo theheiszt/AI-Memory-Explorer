@@ -35,10 +35,27 @@ try {
   console.error('Failed to create storage directories:', e);
 }
 
+function redactLogDetails(val: unknown): unknown {
+  if (val === null || typeof val !== 'object') return val;
+  if (Array.isArray(val)) return val.map(redactLogDetails);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+    if (/key|secret|token|password|auth|credential|bearer/i.test(k)) {
+      out[k] = '[REDACTED_SECRET]';
+    } else if (typeof v === 'object' && v !== null) {
+      out[k] = redactLogDetails(v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 function writeLog(level: 'INFO' | 'WARN' | 'ERROR', message: string, details?: unknown) {
   try {
     const timestamp = new Date().toISOString();
-    const line = `[${timestamp}] [${level}] ${message} ${details ? JSON.stringify(details) : ''}\n`;
+    const safeDetails = details ? redactLogDetails(details) : undefined;
+    const line = `[${timestamp}] [${level}] ${message} ${safeDetails ? JSON.stringify(safeDetails) : ''}\n`;
     fs.appendFileSync(path.join(logsDir, 'desktop.log'), line, 'utf-8');
   } catch {}
 }
@@ -128,6 +145,21 @@ function createMainWindow(port: number) {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  // Prevent navigation away from the loopback application server
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    try {
+      const parsedUrl = new URL(navigationUrl);
+      if (parsedUrl.origin !== `http://${serverHost}:${serverPort}`) {
+        event.preventDefault();
+        if (navigationUrl.startsWith('http:') || navigationUrl.startsWith('https:')) {
+          shell.openExternal(navigationUrl);
+        }
+      }
+    } catch {
+      event.preventDefault();
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -290,25 +322,56 @@ ipcMain.handle('storage:getPaths', () => {
 
 ipcMain.handle('storage:readLocalFile', async (_event, filePath: string) => {
   try {
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`File does not exist: ${filePath}`);
+    if (typeof filePath !== 'string' || !filePath.trim()) {
+      throw new Error('Invalid file path specified');
     }
-    const content = fs.readFileSync(filePath, 'utf-8');
+    if (filePath.includes('\0')) {
+      throw new Error('Null byte detected in file path');
+    }
+    const resolvedPath = path.resolve(filePath);
+    if (!fs.existsSync(resolvedPath)) {
+      throw new Error(`File does not exist: ${resolvedPath}`);
+    }
+    const stat = fs.statSync(resolvedPath);
+    if (!stat.isFile()) {
+      throw new Error('Path does not point to a regular file');
+    }
+    if (stat.size > 100 * 1024 * 1024) {
+      throw new Error('File exceeds maximum allowable size (100MB)');
+    }
+    const content = fs.readFileSync(resolvedPath, 'utf-8');
     return { success: true, content };
   } catch (error) {
+    writeLog('WARN', 'Rejected local file read', { error: (error as Error).message });
     return { success: false, error: (error as Error).message };
   }
 });
 
 ipcMain.handle('storage:writeLocalFile', async (_event, filePath: string, content: string) => {
   try {
-    const parentDir = path.dirname(filePath);
+    if (typeof filePath !== 'string' || !filePath.trim()) {
+      throw new Error('Invalid file path specified');
+    }
+    if (filePath.includes('\0')) {
+      throw new Error('Null byte detected in file path');
+    }
+    const resolvedPath = path.resolve(filePath);
+
+    // Disallow writing executable files or scripts for security
+    const ext = path.extname(resolvedPath).toLowerCase();
+    const disallowedExts = ['.exe', '.bat', '.cmd', '.vbs', '.ps1', '.dll', '.com', '.scr', '.msi', '.pif'];
+    if (disallowedExts.includes(ext)) {
+      throw new Error(`Writing executable or script files (${ext}) is disallowed for security.`);
+    }
+
+    const parentDir = path.dirname(resolvedPath);
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
-    fs.writeFileSync(filePath, content, 'utf-8');
+    fs.writeFileSync(resolvedPath, content, 'utf-8');
     return { success: true };
   } catch (error) {
+    writeLog('WARN', 'Rejected local file write', { error: (error as Error).message });
     return { success: false, error: (error as Error).message };
   }
 });

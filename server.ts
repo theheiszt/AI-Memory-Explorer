@@ -14,6 +14,29 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
+// Security Headers and Strict Loopback Enforcement
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  // Verify request origin is strictly loopback
+  const remoteIp = req.socket.remoteAddress || '';
+  const isLoopback =
+    remoteIp === '127.0.0.1' ||
+    remoteIp === '::1' ||
+    remoteIp === '::ffff:127.0.0.1' ||
+    req.hostname === '127.0.0.1' ||
+    req.hostname === 'localhost';
+
+  if (!isLoopback) {
+    return res.status(403).json({ error: 'Access forbidden: loopback access only' });
+  }
+
+  next();
+});
+
 // Shared server-side Gemini client with User-Agent header for telemetry
 const apiKey = process.env.GEMINI_API_KEY || '';
 const ai = apiKey
