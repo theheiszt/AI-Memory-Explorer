@@ -30,6 +30,7 @@ interface HeaderProps {
   totalRecords: number;
   totalClusters: number;
   connectedAIServerName?: string;
+  datasetProvenance?: 'local' | 'cached' | 'live';
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalRecords,
   totalClusters,
   connectedAIServerName,
+  datasetProvenance = 'local',
 }) => {
   const isDesktop = typeof window !== 'undefined' && !!window.desktopBridge?.isDesktop;
   const currentSource = sources.find(s => s.id === activeSourceId);
@@ -64,12 +66,28 @@ export const Header: React.FC<HeaderProps> = ({
               AI Memory Explorer
             </h1>
             <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-              MVP 0.1
+              Desktop Edition
             </span>
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Read-Only
             </span>
+            {datasetProvenance === 'cached' && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                Cached Offline
+              </span>
+            )}
+            {datasetProvenance === 'live' && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                Live Connected
+              </span>
+            )}
+            {datasetProvenance === 'local' && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                Local Dataset
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 flex items-center gap-2">
             <span>Provider-Independent Semantic Inspector</span>

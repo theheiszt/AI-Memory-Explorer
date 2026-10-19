@@ -72,6 +72,9 @@ export default function App() {
     getSampleRecords('source_real_10k', 2500, 1.0)
   );
 
+  // Dataset provenance tracking (local, cached, live)
+  const [datasetProvenance, setDatasetProvenance] = useState<'local' | 'cached' | 'live'>('local');
+
   // Active View Tab
   const [activeView, setActiveView] = useState<'map2d' | 'map3d' | 'table' | 'history' | 'audit'>('map2d');
 
@@ -182,6 +185,7 @@ export default function App() {
         setSources(prev => [serverSource, ...prev.filter(s => s.id !== config.id)]);
         setActiveSourceId(config.id);
         setRecords(data.memories);
+        setDatasetProvenance('live');
         setLastSyncTime(new Date().toLocaleTimeString());
       }
     } catch (err) {
@@ -228,6 +232,7 @@ export default function App() {
       const data = await res.json();
       if (data.memories && Array.isArray(data.memories)) {
         setRecords(data.memories);
+        setDatasetProvenance('live');
         setLastSyncTime(new Date().toLocaleTimeString());
       }
     } catch (err) {
@@ -325,6 +330,87 @@ export default function App() {
     }
   }, []);
 
+  // Restore persisted state on launch
+  useEffect(() => {
+    async function restorePersistedState() {
+      try {
+        if (typeof window !== 'undefined' && window.desktopBridge?.loadAppState) {
+          const res = await window.desktopBridge.loadAppState();
+          if (res?.success && res.state) {
+            const s = res.state as any;
+            if (s.sources && Array.isArray(s.sources) && s.sources.length > 0) {
+              setSources(s.sources);
+            }
+            if (s.activeSourceId) {
+              setActiveSourceId(s.activeSourceId);
+            }
+            if (s.records && Array.isArray(s.records) && s.records.length > 0) {
+              setRecords(s.records);
+              setDatasetProvenance('cached');
+            }
+            if (s.densityScale) setDensityScale(s.densityScale);
+            if (s.algorithm) setAlgorithm(s.algorithm);
+            return;
+          }
+        }
+        // Web fallback
+        const raw = localStorage.getItem('ai_memory_explorer_state');
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (s.sources && Array.isArray(s.sources)) setSources(s.sources);
+          if (s.activeSourceId) setActiveSourceId(s.activeSourceId);
+          if (s.records && Array.isArray(s.records)) {
+            setRecords(s.records);
+            setDatasetProvenance('cached');
+          }
+        }
+      } catch (err) {
+        console.warn('Could not restore persisted state:', err);
+      }
+    }
+    restorePersistedState();
+  }, []);
+
+  // Save state helper
+  const persistState = useCallback((
+    updatedSources: SourceConfig[],
+    updatedActiveId: string,
+    updatedRecords: NormalizedMemoryRecord[]
+  ) => {
+    const stateToSave = {
+      sources: updatedSources,
+      activeSourceId: updatedActiveId,
+      records: updatedRecords.slice(0, 5000),
+      densityScale,
+      algorithm,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined' && window.desktopBridge?.saveAppState) {
+      window.desktopBridge.saveAppState(stateToSave);
+    } else {
+      try {
+        localStorage.setItem('ai_memory_explorer_state', JSON.stringify(stateToSave));
+      } catch {}
+    }
+  }, [densityScale, algorithm]);
+
+  const handleClearCache = async () => {
+    if (typeof window !== 'undefined' && window.desktopBridge?.saveAppState) {
+      await window.desktopBridge.saveAppState(null);
+    }
+    try {
+      localStorage.removeItem('ai_memory_explorer_state');
+    } catch {}
+    setSources(PRESET_SOURCES);
+    setActiveSourceId('source_real_10k');
+    setSelectedRecord(null);
+    const recs = getSampleRecords('source_real_10k', vectorTargetCount, densityScale);
+    setRecords(recs);
+    setDatasetProvenance('local');
+    handleRecompute();
+  };
+
   // Inject memory turn directly into active AI agent
   const handleInjectMemory = async () => {
     if (!injectContent.trim()) return;
@@ -361,7 +447,10 @@ export default function App() {
 
     const preset = PRESET_SOURCES.find(s => s.id === sourceId);
     if (preset) {
-      setRecords(getSampleRecords(sourceId, vectorTargetCount, densityScale));
+      const recs = getSampleRecords(sourceId, vectorTargetCount, densityScale);
+      setRecords(recs);
+      setDatasetProvenance('local');
+      persistState(sources, sourceId, recs);
     }
   };
 
@@ -547,12 +636,16 @@ export default function App() {
 
   // Handle new source imported via modal
   const handleImportSource = (newSource: SourceConfig, rawData?: string, mapping?: any) => {
-    setSources(prev => [newSource, ...prev.filter(s => s.id !== newSource.id)]);
+    const updatedSources = [newSource, ...sources.filter(s => s.id !== newSource.id)];
+    setSources(updatedSources);
     setActiveSourceId(newSource.id);
     setSelectedRecord(null);
 
     if (newSource.isPreset) {
-      setRecords(getSampleRecords(newSource.id));
+      const recs = getSampleRecords(newSource.id);
+      setRecords(recs);
+      setDatasetProvenance('local');
+      persistState(updatedSources, newSource.id, recs);
       return;
     }
 
@@ -560,7 +653,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(rawData);
         const list = Array.isArray(parsed) ? parsed : parsed.records || [parsed];
-        const normalized = list.map((item: any, i: number) => ({
+        const normalized: NormalizedMemoryRecord[] = list.map((item: any, i: number) => ({
           id: String(item.id || `imported_${i + 1}`),
           sourceId: newSource.id,
           content: item.content || item.text || '[Unavailable]',
@@ -572,13 +665,15 @@ export default function App() {
           memoryType: item.memoryType || 'semantic',
         }));
         setRecords(normalized);
+        setDatasetProvenance('cached');
+        persistState(updatedSources, newSource.id, normalized);
       } catch (e) {
         console.error(e);
       }
     } else if (newSource.type === 'csv' && rawData && mapping) {
       // Ingested via CSVMemoryAdapter
       const lines = rawData.split('\n');
-      const norm = lines.slice(1).map((l, i) => ({
+      const norm: NormalizedMemoryRecord[] = lines.slice(1).filter(l => l.trim().length > 0).map((l, i) => ({
         id: `csv_${i + 1}`,
         sourceId: newSource.id,
         content: l,
@@ -589,6 +684,8 @@ export default function App() {
         memoryType: 'semantic' as const,
       }));
       setRecords(norm);
+      setDatasetProvenance('cached');
+      persistState(updatedSources, newSource.id, norm);
     }
   };
 
@@ -632,6 +729,7 @@ export default function App() {
         totalRecords={records.length}
         totalClusters={clusters.length}
         connectedAIServerName={connectedAIServer?.name}
+        datasetProvenance={datasetProvenance}
       />
 
       {/* Live AI Agent Server Status Bar */}
@@ -1199,10 +1297,7 @@ export default function App() {
         onChangeDensityScale={handleDensityScaleChange}
         vectorTargetCount={vectorTargetCount}
         onChangeVectorTargetCount={handleVectorCountChange}
-        onClearCache={() => {
-          setSelectedRecord(null);
-          handleRecompute();
-        }}
+        onClearCache={handleClearCache}
       />
     </div>
   );
