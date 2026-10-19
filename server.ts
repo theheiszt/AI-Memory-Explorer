@@ -1,9 +1,10 @@
-process.env.DISABLE_HMR = 'true';
-
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import { fileURLToPath } from 'node:url';
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
-import { createServer as createViteServer } from 'vite';
 import { Client as SSHClient } from 'ssh2';
 
 dotenv.config();
@@ -976,29 +977,87 @@ Provide a concise assessment (2-3 paragraphs):
   }
 });
 
-async function startServer() {
-  // Mount Vite middlewares in development
-  const isProd = process.env.NODE_ENV === 'production';
+export { app };
+
+export interface ServerOptions {
+  port?: number;
+  host?: string;
+  distPath?: string;
+  isProd?: boolean;
+}
+
+export async function startServer(options: ServerOptions = {}): Promise<{ server: http.Server; port: number; host: string }> {
+  const isProd = options.isProd ?? (process.env.NODE_ENV === 'production');
+  const host = options.host || (isProd ? '127.0.0.1' : '0.0.0.0');
+  const targetPort = options.port ?? (process.env.PORT ? parseInt(process.env.PORT, 10) : PORT);
+  const distDir = options.distPath || path.resolve(process.cwd(), 'dist');
+
   if (!isProd) {
-    const vite = await createViteServer({
-      server: {
-        middlewareMode: true,
-        hmr: false,
-        ws: false,
-      },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: false,
+          ws: false,
+        },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.warn('Vite middleware could not be loaded, falling back to static files:', e);
+      if (fs.existsSync(distDir)) {
+        app.use(express.static(distDir));
+        app.get('*', (req, res, next) => {
+          if (req.path.startsWith('/api')) return next();
+          res.sendFile(path.join(distDir, 'index.html'));
+        });
+      }
+    }
   } else {
-    app.use(express.static('dist'));
-    app.get('*', (req, res) => {
-      res.sendFile('dist/index.html', { root: '.' });
-    });
+    if (fs.existsSync(distDir)) {
+      app.use(express.static(distDir));
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api')) return next();
+        res.sendFile(path.join(distDir, 'index.html'));
+      });
+    }
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`AI Memory Explorer running on http://0.0.0.0:${PORT}`);
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(app);
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE' && targetPort !== 0) {
+        console.warn(`Port ${targetPort} in use, attempting automatic fallback to dynamic loopback port...`);
+        server.listen(0, host, () => {
+          const addr = server.address() as any;
+          const assignedPort = addr.port;
+          console.log(`AI Memory Explorer running on http://${host}:${assignedPort}`);
+          resolve({ server, port: assignedPort, host });
+        });
+      } else {
+        reject(err);
+      }
+    });
+
+    server.listen(targetPort, host, () => {
+      const addr = server.address() as any;
+      const assignedPort = addr.port;
+      console.log(`AI Memory Explorer running on http://${host}:${assignedPort}`);
+      resolve({ server, port: assignedPort, host });
+    });
   });
 }
 
-startServer();
+// Auto-run if executed directly via CLI
+const isDirectRun = process.argv[1] && (
+  process.argv[1].endsWith('server.ts') || 
+  process.argv[1].endsWith('server.js')
+);
+
+if (isDirectRun) {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}

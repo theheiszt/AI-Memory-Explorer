@@ -1,14 +1,22 @@
 {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
+  "name": "ai-memory-explorer",
+  "productName": "AI Memory Explorer",
+  "version": "1.0.0",
+  "description": "Cross-platform inspector and 2D/3D semantic landscape for AI agent memories",
+  "author": "AI Memory Explorer Team",
+  "main": "dist-electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
-    "build": "vite build",
+    "build:ui": "vite build",
+    "build:electron": "esbuild electron/main.ts --bundle --platform=node --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:ssh2 --external:@google/genai --external:vite --format=cjs && esbuild electron/preload.ts --bundle --platform=node --target=node22 --outfile=dist-electron/preload.cjs --external:electron --format=cjs",
+    "build": "npm run build:ui && npm run build:electron",
+    "electron:start": "npm run build && electron .",
+    "package:win": "npm run build && electron-builder --win --x64",
+    "package:portable": "npm run build && electron-builder --win portable --x64",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
+    "clean": "rm -rf dist dist-electron release",
     "test": "tsx --test \"src/services/**/*.test.ts\"",
     "lint": "tsc --noEmit"
   },
@@ -34,9 +42,50 @@
     "@types/react-dom": "^19.3.0",
     "@types/ssh2": "^1.15.6",
     "autoprefixer": "^10.4.21",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"
+  },
+  "build": {
+    "appId": "com.aimemory.explorer",
+    "productName": "AI Memory Explorer",
+    "copyright": "Copyright © 2026 AI Memory Explorer",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "dist-electron/main.cjs"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI Memory Explorer",
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    }
   }
 }

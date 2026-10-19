@@ -10,6 +10,7 @@ import { CognitiveAuditView } from './components/CognitiveAuditView.tsx';
 import { ImportModal } from './components/ImportModal.tsx';
 import { ExportModal } from './components/ExportModal.tsx';
 import { AIServerConnectModal } from './components/AIServerConnectModal.tsx';
+import { SettingsModal } from './components/SettingsModal.tsx';
 import {
   Server,
   Zap,
@@ -93,6 +94,7 @@ export default function App() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAIServerModalOpen, setIsAIServerModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // AI Server Connection State
   const [connectedAIServer, setConnectedAIServer] = useState<AIServerConfig | null>(null);
@@ -281,6 +283,47 @@ export default function App() {
 
     return () => clearInterval(timer);
   }, [connectedAIServer, handleSyncAIServer]);
+
+  // Listen for native desktop menu events (Ctrl+O, Ctrl+S, Ctrl+,, etc.)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.desktopBridge?.onMenuAction) {
+      const cleanup = window.desktopBridge.onMenuAction((action: string) => {
+        switch (action) {
+          case 'open-import':
+            setIsImportModalOpen(true);
+            break;
+          case 'open-export':
+            setIsExportModalOpen(true);
+            break;
+          case 'open-connect':
+            setIsAIServerModalOpen(true);
+            break;
+          case 'open-settings':
+            setIsSettingsModalOpen(true);
+            break;
+          case 'view-map2d':
+            setActiveView('map2d');
+            break;
+          case 'view-map3d':
+            setActiveView('map3d');
+            break;
+          case 'view-table':
+            setActiveView('table');
+            break;
+          case 'view-history':
+            setActiveView('history');
+            break;
+          case 'view-audit':
+            setActiveView('audit');
+            break;
+          case 'recompute':
+            handleRecompute();
+            break;
+        }
+      });
+      return cleanup;
+    }
+  }, []);
 
   // Inject memory turn directly into active AI agent
   const handleInjectMemory = async () => {
@@ -583,6 +626,7 @@ export default function App() {
         onOpenImport={() => setIsImportModalOpen(true)}
         onOpenExport={() => setIsExportModalOpen(true)}
         onOpenAIServer={() => setIsAIServerModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
         onRecompute={handleRecompute}
         isRecomputing={isRecomputing}
         totalRecords={records.length}
@@ -1144,6 +1188,22 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Application Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        defaultAlgorithm={algorithm}
+        onChangeDefaultAlgorithm={setAlgorithm}
+        densityScale={densityScale}
+        onChangeDensityScale={handleDensityScaleChange}
+        vectorTargetCount={vectorTargetCount}
+        onChangeVectorTargetCount={handleVectorCountChange}
+        onClearCache={() => {
+          setSelectedRecord(null);
+          handleRecompute();
+        }}
+      />
     </div>
   );
 }

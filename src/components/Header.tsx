@@ -11,6 +11,7 @@ import {
   Database,
   RefreshCw,
   Info,
+  Settings,
 } from 'lucide-react';
 import { SourceConfig } from '../types/memory.ts';
 
@@ -23,6 +24,7 @@ interface HeaderProps {
   onOpenImport: () => void;
   onOpenExport: () => void;
   onOpenAIServer: () => void;
+  onOpenSettings?: () => void;
   onRecompute: () => void;
   isRecomputing: boolean;
   totalRecords: number;
@@ -39,12 +41,14 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenImport,
   onOpenExport,
   onOpenAIServer,
+  onOpenSettings,
   onRecompute,
   isRecomputing,
   totalRecords,
   totalClusters,
   connectedAIServerName,
 }) => {
+  const isDesktop = typeof window !== 'undefined' && !!window.desktopBridge?.isDesktop;
   const currentSource = sources.find(s => s.id === activeSourceId);
 
   return (
@@ -203,6 +207,16 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Download className="w-3.5 h-3.5 text-slate-300" />
           <span>Export</span>
+        </button>
+
+        {/* Settings button */}
+        <button
+          onClick={onOpenSettings}
+          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-700 transition-colors"
+          title="Application Settings & Projections"
+          aria-label="Settings"
+        >
+          <Settings className="w-4 h-4" />
         </button>
       </div>
     </header>
