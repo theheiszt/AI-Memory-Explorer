@@ -44,7 +44,29 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   if (!isOpen) return null;
 
-  const triggerDownload = (content: string, filename: string, type = 'application/json') => {
+  const triggerDownload = async (content: string, filename: string, type = 'application/json') => {
+    if (typeof window !== 'undefined' && window.desktopBridge?.showSaveDialog) {
+      try {
+        const isCsv = filename.endsWith('.csv');
+        const res = await window.desktopBridge.showSaveDialog({
+          title: 'Export AI Memory Data',
+          defaultPath: filename,
+          filters: isCsv
+            ? [{ name: 'CSV File (*.csv)', extensions: ['csv'] }]
+            : [{ name: 'JSON File (*.json)', extensions: ['json'] }, { name: 'All Files (*.*)', extensions: ['*'] }],
+        });
+        if (!res.canceled && res.filePath) {
+          const writeRes = await window.desktopBridge.writeLocalFile(res.filePath, content);
+          if (!writeRes.success) {
+            console.error('Failed to write exported file:', writeRes.error);
+          }
+        }
+      } catch (err) {
+        console.error('Save dialog error:', err);
+      }
+      return;
+    }
+
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

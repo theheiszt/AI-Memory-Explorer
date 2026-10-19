@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Upload,
   ArrowRight,
+  FolderOpen,
 } from 'lucide-react';
 import { SourceConfig, SourceType } from '../types/memory.ts';
 import { JSONMemoryAdapter } from '../services/adapters/jsonAdapter.ts';
@@ -44,6 +45,104 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleBrowseJSONFile = async () => {
+    setError(null);
+    if (typeof window !== 'undefined' && window.desktopBridge?.showOpenDialog) {
+      try {
+        const res = await window.desktopBridge.showOpenDialog({
+          title: 'Select Memory JSON or JSONL File',
+          filters: [
+            { name: 'JSON / JSONL Files (*.json, *.jsonl)', extensions: ['json', 'jsonl'] },
+            { name: 'All Files (*.*)', extensions: ['*'] },
+          ],
+          properties: ['openFile'],
+        });
+        if (!res.canceled && res.filePaths?.[0]) {
+          const filePath = res.filePaths[0];
+          const readRes = await window.desktopBridge.readLocalFile(filePath);
+          if (readRes.success && readRes.content) {
+            setJsonText(readRes.content);
+            const base = filePath.split(/[/\\]/).pop()?.replace(/\.[^/.]+$/, '') || '';
+            if (!sourceName && base) {
+              setSourceName(base);
+            }
+          } else {
+            setError(readRes.error || 'Failed to read selected file');
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || 'File dialog error');
+      }
+      return;
+    }
+
+    // Browser fallback
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.jsonl';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          setJsonText(String(re.target?.result || ''));
+          if (!sourceName) setSourceName(file.name.replace(/\.[^/.]+$/, ''));
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleBrowseCSVFile = async () => {
+    setError(null);
+    if (typeof window !== 'undefined' && window.desktopBridge?.showOpenDialog) {
+      try {
+        const res = await window.desktopBridge.showOpenDialog({
+          title: 'Select Memory CSV File',
+          filters: [
+            { name: 'CSV Files (*.csv)', extensions: ['csv'] },
+            { name: 'All Files (*.*)', extensions: ['*'] },
+          ],
+          properties: ['openFile'],
+        });
+        if (!res.canceled && res.filePaths?.[0]) {
+          const filePath = res.filePaths[0];
+          const readRes = await window.desktopBridge.readLocalFile(filePath);
+          if (readRes.success && readRes.content) {
+            setCsvText(readRes.content);
+            const base = filePath.split(/[/\\]/).pop()?.replace(/\.[^/.]+$/, '') || '';
+            if (!sourceName && base) {
+              setSourceName(base);
+            }
+          } else {
+            setError(readRes.error || 'Failed to read selected file');
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || 'File dialog error');
+      }
+      return;
+    }
+
+    // Browser fallback
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          setCsvText(String(re.target?.result || ''));
+          if (!sourceName) setSourceName(file.name.replace(/\.[^/.]+$/, ''));
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
 
   const handleImportJSON = () => {
     setError(null);
@@ -257,9 +356,19 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Paste JSON Array or JSONL
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Paste JSON / JSONL or Open File
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleBrowseJSONFile}
+                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[11px] font-medium border border-slate-700 flex items-center gap-1.5 transition-colors"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Browse File...</span>
+                  </button>
+                </div>
                 <textarea
                   rows={8}
                   placeholder={`[\n  {\n    "id": "mem_1",\n    "content": "User prefers concise python solutions",\n    "vector": [0.12, -0.45, ...],\n    "metadata": { "tag": "preferences" }\n  }\n]`}
@@ -326,9 +435,19 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Paste CSV Data
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Paste CSV Data or Open File
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleBrowseCSVFile}
+                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[11px] font-medium border border-slate-700 flex items-center gap-1.5 transition-colors"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Browse CSV...</span>
+                  </button>
+                </div>
                 <textarea
                   rows={6}
                   placeholder={`id,content,embedding,type\n1,"First remembered fact","[0.1, 0.2, 0.3]",semantic\n2,"User lives in Tokyo","[0.4, 0.1, -0.2]",profile`}

@@ -85,9 +85,12 @@ export function exportSearchResultsCSV(results: SearchMatch[]): string {
 }
 
 export function exportDiagnosticLogs(logs: DiagnosticLog[], redact = true): string {
-  const processed = logs.map(l => ({
-    ...l,
-    context: redact ? redactSensitiveObject(l.redactedContext || {}) : l.redactedContext,
-  }));
+  const processed = logs.map(l => {
+    const copy: DiagnosticLog = { ...l };
+    if (copy.redactedContext) {
+      copy.redactedContext = redact ? redactSensitiveObject(copy.redactedContext) : copy.redactedContext;
+    }
+    return copy;
+  });
   return JSON.stringify(processed, null, 2);
 }
