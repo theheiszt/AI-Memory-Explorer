@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "description": "Cross-platform inspector and 2D/3D semantic landscape for AI agent memories",
   "author": "AI Memory Explorer Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theheiszt/AI-Memory-Explorer.git"
+  },
   "main": "dist-electron/main.cjs",
   "type": "module",
   "scripts": {

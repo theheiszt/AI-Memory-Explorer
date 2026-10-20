@@ -141,6 +141,26 @@ Download the latest executables from the `release/` directory or build them from
 
 ---
 
+## Support & Donations
+
+If you find **AI Memory Explorer** useful for your research, AI agent development, or memory auditing workflows, consider supporting further open-source development!
+
+| Currency | Network | Donation Address |
+|---|---|---|
+| **Bitcoin (BTC)** | Native SegWit (Bech32) | `bc1q3nvq2wa44c2uxd35lfk79w04g8apw3285pts7t` |
+| **Ethereum (ETH)** | ERC-20 / EVM | `0x023412b3ace6deA537feA0ca5888ccfB5250b3Ba` |
+| **Solana (SOL)** | Solana SPL | `BU5zBur46YjnCaY34XGBTJ8KSAG9EExjpZA58wDo7wAx` |
+
+```text
+Bitcoin (BTC):   bc1q3nvq2wa44c2uxd35lfk79w04g8apw3285pts7t
+Ethereum (ETH):  0x023412b3ace6deA537feA0ca5888ccfB5250b3Ba
+Solana (SOL):    BU5zBur46YjnCaY34XGBTJ8KSAG9EExjpZA58wDo7wAx
+```
+
+Your support directly funds open-source AI tooling, local inference performance optimizations, and multi-agent visualization features.
+
+---
+
 ## License
 
 Copyright © 2026 AI Memory Explorer Team. Distributed under the MIT License.

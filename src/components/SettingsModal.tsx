@@ -14,6 +14,9 @@ import {
   AlertCircle,
   Save,
   RotateCcw,
+  Heart,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -39,7 +42,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onChangeVectorTargetCount,
   onClearCache,
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'storage' | 'system'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'storage' | 'system' | 'donations'>('general');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [appPaths, setAppPaths] = useState<{ appData?: string; storage?: string; logs?: string }>({});
   const [systemInfo, setSystemInfo] = useState<any>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -97,6 +101,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
     setSaveMessage('API key cleared. System will use offline local cognitive engine.');
     setTimeout(() => setSaveMessage(null), 3000);
+  };
+
+  const handleCopy = (key: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2500);
   };
 
   return (
@@ -173,6 +183,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Cpu className="w-3.5 h-3.5" />
             <span>System Diagnostics</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('donations')}
+            className={`py-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+              activeTab === 'donations'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Heart className="w-3.5 h-3.5 text-rose-400" />
+            <span>Support & Donate</span>
           </button>
         </div>
 
@@ -432,6 +453,113 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div>Node Integration: <span className="text-emerald-400 font-bold">DISABLED</span></div>
                   <div>Sandbox Bridge: <span className="text-emerald-400 font-bold">SECURE</span></div>
                   <div>Source Operations: <span className="text-emerald-400 font-bold">READ-ONLY</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Support & Donations Tab */}
+          {activeTab === 'donations' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-purple-950/40 border border-indigo-500/30">
+                <div className="flex items-center gap-2 text-rose-400 font-semibold text-sm">
+                  <Heart className="w-4 h-4 fill-rose-400" />
+                  <span>Support Open-Source Development</span>
+                </div>
+                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                  AI Memory Explorer is an open-source, provider-independent project. If you find this software helpful for your research, AI agent orchestration, or memory auditing, donations are deeply appreciated!
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Bitcoin */}
+                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-amber-500/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      <span className="font-semibold text-slate-100 text-xs">Bitcoin (BTC)</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Native SegWit</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('btc', 'bc1q3nvq2wa44c2uxd35lfk79w04g8apw3285pts7t')}
+                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
+                    >
+                      {copiedKey === 'btc' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400 font-medium">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Copy Address</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="mt-2 font-mono text-[11px] text-amber-300/90 bg-slate-900/90 p-2 rounded border border-slate-800/80 select-all break-all">
+                    bc1q3nvq2wa44c2uxd35lfk79w04g8apw3285pts7t
+                  </div>
+                </div>
+
+                {/* Ethereum */}
+                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-indigo-500/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                      <span className="font-semibold text-slate-100 text-xs">Ethereum (ETH)</span>
+                      <span className="text-[10px] text-slate-500 font-mono">ERC-20 / EVM</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('eth', '0x023412b3ace6deA537feA0ca5888ccfB5250b3Ba')}
+                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
+                    >
+                      {copiedKey === 'eth' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400 font-medium">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Copy Address</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="mt-2 font-mono text-[11px] text-indigo-300/90 bg-slate-900/90 p-2 rounded border border-slate-800/80 select-all break-all">
+                    0x023412b3ace6deA537feA0ca5888ccfB5250b3Ba
+                  </div>
+                </div>
+
+                {/* Solana */}
+                <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-cyan-500/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                      <span className="font-semibold text-slate-100 text-xs">Solana (SOL)</span>
+                      <span className="text-[10px] text-slate-500 font-mono">SPL Network</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy('sol', 'BU5zBur46YjnCaY34XGBTJ8KSAG9EExjpZA58wDo7wAx')}
+                      className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1.5 transition-colors border border-slate-700"
+                    >
+                      {copiedKey === 'sol' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400 font-medium">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Copy Address</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="mt-2 font-mono text-[11px] text-cyan-300/90 bg-slate-900/90 p-2 rounded border border-slate-800/80 select-all break-all">
+                    BU5zBur46YjnCaY34XGBTJ8KSAG9EExjpZA58wDo7wAx
+                  </div>
                 </div>
               </div>
             </div>
