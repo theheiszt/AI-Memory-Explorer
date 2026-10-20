@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildStreamGraphFromRecords, resolveRecordFromNode } from './graphBuilder.ts';
+import {
+  buildStreamGraphFromRecords,
+  resolveRecordFromNode,
+  computeVirtualReach,
+  toggleClusterExpansion,
+  toggleMemoryExpansion,
+} from './graphBuilder.ts';
 import type { NormalizedMemoryRecord, ClusterInfo } from '../../types/memory.ts';
 
 test('graphBuilder: 1:1 mapping of memory records to graph nodes and safe resolution', () => {
@@ -197,4 +203,90 @@ test('graphBuilder: non-mutation of input source records', () => {
   buildStreamGraphFromRecords([originalRecord]);
 
   assert.deepEqual(originalRecord, copy);
+});
+
+test('graphBuilder: progressive 1-hop neighborhood reveal for expanded nodes', () => {
+  const records: NormalizedMemoryRecord[] = [
+    {
+      id: 'center_mem',
+      sourceId: 's',
+      content: 'Center query memory',
+      contentAvailable: true,
+      memoryType: 'episodic',
+      explicitRelations: [
+        { targetId: 'hidden_neighbor', relationType: 'causes', strength: 0.9 },
+      ],
+    },
+    {
+      id: 'hidden_neighbor',
+      sourceId: 's',
+      content: 'Target neighbor hidden by category filter',
+      contentAvailable: true,
+      memoryType: 'system', // Different category
+    },
+  ];
+
+  // Apply category filter that would normally hide hidden_neighbor
+  const graph = buildStreamGraphFromRecords(records, {
+    selectedCategory: 'episodic',
+    expandedMemoryIds: new Set(['center_mem']),
+  });
+
+  const centerNode = graph.nodeMap.get('node_center_mem')!;
+  const neighborNode = graph.nodeMap.get('node_hidden_neighbor')!;
+
+  assert.equal(centerNode.isVisible, true);
+  // Because center_mem is expanded, its 1-hop neighbor is forced visible
+  assert.equal(neighborNode.isVisible, true);
+});
+
+test('graphBuilder: computeVirtualReach accurately measures 1-hop and 2-hop graph boundary', () => {
+  const records: NormalizedMemoryRecord[] = [
+    {
+      id: 'root',
+      sourceId: 's',
+      content: 'Root',
+      contentAvailable: true,
+      explicitRelations: [{ targetId: 'hop1', relationType: 'references' }],
+    },
+    {
+      id: 'hop1',
+      sourceId: 's',
+      content: 'Hop 1',
+      contentAvailable: true,
+      explicitRelations: [{ targetId: 'hop2', relationType: 'references' }],
+    },
+    {
+      id: 'hop2',
+      sourceId: 's',
+      content: 'Hop 2',
+      contentAvailable: true,
+    },
+    {
+      id: 'unconnected',
+      sourceId: 's',
+      content: 'Isolated',
+      contentAvailable: true,
+    },
+  ];
+
+  const reach = computeVirtualReach('root', records);
+  assert.equal(reach.directCount, 1);
+  assert.equal(reach.secondHopCount, 1);
+  assert.equal(reach.totalReach, 3); // root + hop1 + hop2
+});
+
+test('graphBuilder: expansion toggle utilities operate immutably', () => {
+  const cSet = new Set([1, 2]);
+  const cExpanded = toggleClusterExpansion(3, cSet);
+  assert.equal(cExpanded.has(3), true);
+  assert.equal(cSet.has(3), false); // immutable
+
+  const cCollapsed = toggleClusterExpansion(1, cExpanded);
+  assert.equal(cCollapsed.has(1), false);
+
+  const mSet = new Set(['m1']);
+  const mExpanded = toggleMemoryExpansion('m2', mSet);
+  assert.equal(mExpanded.has('m2'), true);
+  assert.equal(mSet.has('m2'), false);
 });

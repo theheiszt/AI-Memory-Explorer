@@ -118,6 +118,15 @@ export function buildStreamGraphFromRecords(
       isVisible = false;
     }
 
+    // In 'balanced' mode, sample top 3 members per unexpanded cluster
+    if (detailLevel === 'balanced' && assignedClusterId !== undefined && !expandedClusterIds.has(assignedClusterId)) {
+      const clusterMembers = records.filter(r => clusterMap.get(r.id) === assignedClusterId);
+      const memberIdx = clusterMembers.findIndex(r => r.id === record.id);
+      if (memberIdx >= 3) {
+        isVisible = false;
+      }
+    }
+
     const node: StreamGraphNode = {
       id: nodeId,
       memoryId: record.id,
@@ -432,8 +441,38 @@ export function buildStreamGraphFromRecords(
     }
   }
 
+  // 3.6 Progressive Neighborhood Expansion (Force 1-hop neighbors of expanded memories to visible)
+  if (expandedMemoryIds.size > 0) {
+    for (const memId of expandedMemoryIds) {
+      const anchorNodeId = recordToNodeId.get(memId);
+      if (!anchorNodeId) continue;
+      const anchorNode = nodeMap.get(anchorNodeId);
+      if (anchorNode) {
+        anchorNode.isVisible = true;
+        anchorNode.isExpanded = true;
+      }
+
+      for (const edge of edgeMap.values()) {
+        if (edge.source === anchorNodeId) {
+          const targetNode = nodeMap.get(edge.target);
+          if (targetNode) targetNode.isVisible = true;
+        } else if (edge.target === anchorNodeId) {
+          const sourceNode = nodeMap.get(edge.source);
+          if (sourceNode) sourceNode.isVisible = true;
+        }
+      }
+    }
+  }
+
   const allNodes = Array.from(nodeMap.values());
   const allEdges = Array.from(edgeMap.values());
+
+  // Count displayed edges where both endpoints are visible
+  const displayedEdges = allEdges.filter(e => {
+    const s = nodeMap.get(e.source);
+    const t = nodeMap.get(e.target);
+    return s?.isVisible && t?.isVisible;
+  }).length;
 
   const visibleMemoryNodes = allNodes.filter(n => n.nodeKind === 'memory' && n.isVisible).length;
   const collapsedRecords = records.length - visibleMemoryNodes;
@@ -450,7 +489,7 @@ export function buildStreamGraphFromRecords(
       totalClusters: clusters.length,
       visibleMemoryNodes,
       collapsedRecords,
-      displayedEdges: allEdges.length,
+      displayedEdges,
       explicitEdgesCount,
       similarityEdgesCount,
       temporalEdgesCount,
@@ -458,6 +497,93 @@ export function buildStreamGraphFromRecords(
       clusterEdgesCount,
     },
   };
+}
+
+/**
+ * Computes 1-hop and 2-hop virtual reach for a given memory record based on explicit and cosine links.
+ */
+export function computeVirtualReach(
+  anchorRecordId: string,
+  records: NormalizedMemoryRecord[],
+  similarityThreshold: number = 0.70
+): { directCount: number; secondHopCount: number; totalReach: number } {
+  const recordMap = new Map(records.map(r => [r.id, r]));
+  const anchor = recordMap.get(anchorRecordId);
+  if (!anchor) return { directCount: 0, secondHopCount: 0, totalReach: 0 };
+
+  const firstHop = new Set<string>();
+
+  // Explicit relations
+  if (anchor.explicitRelations) {
+    for (const rel of anchor.explicitRelations) {
+      if (rel.targetId && rel.targetId !== anchorRecordId) {
+        firstHop.add(rel.targetId);
+      }
+    }
+  }
+
+  // Cosine similarity
+  if (anchor.embedding && Array.isArray(anchor.embedding)) {
+    for (const r of records) {
+      if (r.id !== anchorRecordId && r.embedding && Array.isArray(r.embedding)) {
+        if (cosineSimilarity(anchor.embedding, r.embedding) >= similarityThreshold) {
+          firstHop.add(r.id);
+        }
+      }
+    }
+  }
+
+  // Second hop
+  const secondHop = new Set<string>();
+  for (const fId of firstHop) {
+    const fRec = recordMap.get(fId);
+    if (!fRec) continue;
+    if (fRec.explicitRelations) {
+      for (const rel of fRec.explicitRelations) {
+        if (rel.targetId && rel.targetId !== anchorRecordId && !firstHop.has(rel.targetId)) {
+          secondHop.add(rel.targetId);
+        }
+      }
+    }
+  }
+
+  return {
+    directCount: firstHop.size,
+    secondHopCount: secondHop.size,
+    totalReach: 1 + firstHop.size + secondHop.size,
+  };
+}
+
+/**
+ * Toggle cluster expansion state in a Set.
+ */
+export function toggleClusterExpansion(
+  clusterId: number,
+  currentExpanded: Set<number>
+): Set<number> {
+  const next = new Set(currentExpanded);
+  if (next.has(clusterId)) {
+    next.delete(clusterId);
+  } else {
+    next.add(clusterId);
+  }
+  return next;
+}
+
+/**
+ * Toggle memory neighborhood expansion state in a Set.
+ */
+export function toggleMemoryExpansion(
+  memoryId: string,
+  currentExpanded: Set<string>
+): Set<string> {
+  const next = new Set(currentExpanded);
+  if (next.has(memoryId)) {
+    next.delete(memoryId);
+  } else {
+    next.add(memoryId);
+  }
+  return next;
 }
 
 /**
