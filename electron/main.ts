@@ -229,18 +229,23 @@ function buildApplicationMenu() {
           click: () => mainWindow?.webContents.send('menu:action', 'view-map3d'),
         },
         {
-          label: '&Table Explorer',
+          label: 'Stream &Graph',
           accelerator: 'CmdOrCtrl+3',
+          click: () => mainWindow?.webContents.send('menu:action', 'view-graph'),
+        },
+        {
+          label: '&Table Explorer',
+          accelerator: 'CmdOrCtrl+4',
           click: () => mainWindow?.webContents.send('menu:action', 'view-table'),
         },
         {
           label: 'Snapshot &History',
-          accelerator: 'CmdOrCtrl+4',
+          accelerator: 'CmdOrCtrl+5',
           click: () => mainWindow?.webContents.send('menu:action', 'view-history'),
         },
         {
           label: 'Cognitive &Audit',
-          accelerator: 'CmdOrCtrl+5',
+          accelerator: 'CmdOrCtrl+6',
           click: () => mainWindow?.webContents.send('menu:action', 'view-audit'),
         },
         { type: 'separator' },

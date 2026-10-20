@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from './components/Header.tsx';
 import { SemanticMap2D } from './components/SemanticMap2D.tsx';
 import { SemanticMap3D } from './components/SemanticMap3D.tsx';
+import { StreamGraphView } from './components/StreamGraphView.tsx';
 import { MemoryInspector } from './components/MemoryInspector.tsx';
 import { SimilaritySearch } from './components/SimilaritySearch.tsx';
 import { TableExplorer } from './components/TableExplorer.tsx';
@@ -76,7 +77,7 @@ export default function App() {
   const [datasetProvenance, setDatasetProvenance] = useState<'local' | 'cached' | 'live'>('local');
 
   // Active View Tab
-  const [activeView, setActiveView] = useState<'map2d' | 'map3d' | 'table' | 'history' | 'audit'>('map2d');
+  const [activeView, setActiveView] = useState<'map2d' | 'map3d' | 'graph' | 'table' | 'history' | 'audit'>('map2d');
 
   // Selected Memory
   const [selectedRecord, setSelectedRecord] = useState<NormalizedMemoryRecord | null>(null);
@@ -311,6 +312,9 @@ export default function App() {
             break;
           case 'view-map3d':
             setActiveView('map3d');
+            break;
+          case 'view-graph':
+            setActiveView('graph');
             break;
           case 'view-table':
             setActiveView('table');
@@ -565,6 +569,14 @@ export default function App() {
     setExpandedRecordIds(new Set());
     setExpandedSubMemories(new Map());
   }, []);
+
+  const initialGraphPositions = useMemo(() => {
+    const map = new Map<string, [number, number]>();
+    for (const pt of points) {
+      map.set(pt.id, [pt.x, pt.y]);
+    }
+    return map;
+  }, [points]);
 
   const reachMetrics = useMemo(() => {
     return computeVirtualReach(records.length, expandedRecordIds.size, 100);
@@ -949,8 +961,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Similarity Search & Filters Subheader (shown on 2D, 3D, and Table views) */}
-      {(activeView === 'map2d' || activeView === 'map3d' || activeView === 'table') && (
+      {/* Similarity Search & Filters Subheader (shown on 2D, 3D, Graph, and Table views) */}
+      {(activeView === 'map2d' || activeView === 'map3d' || activeView === 'graph' || activeView === 'table') && (
         <SimilaritySearch
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -1014,7 +1026,21 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 3: Tabular Ledger */}
+        {/* VIEW 3: Interactive Stream Graph Topology */}
+        {activeView === 'graph' && (
+          <StreamGraphView
+            records={records}
+            clusters={clusters}
+            clusterMap={clusterMap}
+            selectedRecordId={selectedRecord?.id || null}
+            onSelectRecord={setSelectedRecord}
+            searchQuery={searchQuery}
+            highlightedIds={highlightedIds}
+            initialPositions={initialGraphPositions}
+          />
+        )}
+
+        {/* VIEW 4: Tabular Ledger */}
         {activeView === 'table' && (
           <TableExplorer
             records={filteredRecords}

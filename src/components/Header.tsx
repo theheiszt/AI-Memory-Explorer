@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Info,
   Settings,
+  Share2,
 } from 'lucide-react';
 import { SourceConfig } from '../types/memory.ts';
 
@@ -19,8 +20,8 @@ interface HeaderProps {
   sources: SourceConfig[];
   activeSourceId: string;
   onSelectSource: (sourceId: string) => void;
-  activeView: 'map2d' | 'map3d' | 'table' | 'history' | 'audit';
-  onChangeView: (view: 'map2d' | 'map3d' | 'table' | 'history' | 'audit') => void;
+  activeView: 'map2d' | 'map3d' | 'graph' | 'table' | 'history' | 'audit';
+  onChangeView: (view: 'map2d' | 'map3d' | 'graph' | 'table' | 'history' | 'audit') => void;
   onOpenImport: () => void;
   onOpenExport: () => void;
   onOpenAIServer: () => void;
@@ -125,6 +126,19 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Box className="w-3.5 h-3.5" />
           <span>3D Space</span>
+        </button>
+
+        <button
+          onClick={() => onChangeView('graph')}
+          className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+            activeView === 'graph'
+              ? 'bg-indigo-600 text-white shadow'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+          title="Interactive Stream Graph Topology & Knowledge Network"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span>Stream Graph</span>
         </button>
 
         <button
