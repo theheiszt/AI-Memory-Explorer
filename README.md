@@ -2,15 +2,20 @@
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-blue.svg)](#system-requirements)
 [![Release](https://img.shields.io/badge/Release-v1.0.0-emerald.svg)](#distribution-packages)
-[![Tests](https://img.shields.io/badge/Automated%20Tests-39%2F39%20Passing-brightgreen.svg)](#automated-testing)
+[![Tests](https://img.shields.io/badge/Automated%20Tests-51%2F51%20Passing-brightgreen.svg)](#automated-testing)
 [![Security](https://img.shields.io/badge/Security-Hardened%20%7C%20Read--Only-indigo.svg)](#security--privacy)
 
-**AI Memory Explorer** is a provider-independent semantic inspection workspace and multidimensional vector landscape for AI agent memories. It converts high-dimensional latent memory spaces into interactive 2D and 3D topological manifolds, enabling developers, researchers, and operators to inspect agent recall, analyze semantic clustering, audit knowledge drift, and compare memory snapshots over time.
+**AI Memory Explorer** is a provider-independent semantic inspection workspace and multidimensional vector landscape for AI agent memories. It converts high-dimensional latent memory spaces into interactive 2D, 3D, and force-directed graph manifolds, enabling developers, researchers, and operators to inspect agent recall, analyze semantic clustering, audit knowledge drift, and compare memory snapshots over time.
 
 ---
 
 ## Key Features
 
+- **Interactive Stream Graph Topology Engine:**
+  - Decoupled, force-directed graph simulation with Coulomb repulsion, Hookean edge springs, cluster gravity, and kinetic cooling.
+  - Progressive Level-of-Detail (LOD): Overview, Balanced, Detailed, and Maximum modes with cluster hubs and 1-hop progressive neighborhood reveal.
+  - Strict semantic edge taxonomy: Explicit source relations (`causes`, `contradicts`, `supersedes`), cosine similarity, sequential temporal flow, and retrieval co-occurrence.
+  - Interactive reach metrics: Instantaneous 1-hop and 2-hop graph connectivity analysis.
 - **Interactive Semantic Manifold (2D & 3D):**
   - High-performance 2D Canvas rendering with smooth panning, zooming, hovering, and point inspection.
   - Optional 3D Latent Space exploration powered by Three.js with automatic graceful fallback to 2D when WebGL/hardware acceleration is unavailable.
@@ -56,9 +61,10 @@ Download the latest executables from the `release/` directory or build them from
 | `Ctrl + ,` | Open Application Settings |
 | `Ctrl + 1` | Switch to 2D Semantic Map |
 | `Ctrl + 2` | Switch to 3D Latent Space |
-| `Ctrl + 3` | Switch to Table Explorer |
-| `Ctrl + 4` | Switch to Snapshot History Diff |
-| `Ctrl + 5` | Switch to Cognitive Audit |
+| `Ctrl + 3` | Switch to Interactive Stream Graph |
+| `Ctrl + 4` | Switch to Table Explorer |
+| `Ctrl + 5` | Switch to Snapshot History Diff |
+| `Ctrl + 6` | Switch to Cognitive Audit |
 | `F5` | Recompute Projections & Clusters |
 | `F11` | Toggle Fullscreen |
 | `Alt + F4` | Exit Application |

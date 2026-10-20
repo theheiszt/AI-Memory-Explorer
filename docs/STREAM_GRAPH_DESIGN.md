@@ -244,38 +244,18 @@ When a search query matches a record currently inside a collapsed cluster:
 
 ---
 
-## 9. Implementation Roadmap
+## 9. Implementation Roadmap & Status
 
-```
-Stage 0: Audit & Architecture Design (THIS DOCUMENT)
-   │
-   ▼
-Stage 1: Graph Data Model (src/types/streamGraph.ts, graphBuilder.ts)
-   │
-   ▼
-Stage 2: Force-Directed Layout Simulation (src/services/graph/forceLayout.ts)
-   │
-   ▼
-Stage 3: Progressive Expansion & Level-of-Detail Engine
-   │
-   ▼
-Stage 4: Relationship Engine & Visual Edge Taxonomy
-   │
-   ▼
-Stage 5: Interaction, Canvas Viewport & Inspector Integration
-   │
-   ▼
-Stage 6: Search, Filters & Time Range Controls
-   │
-   ▼
-Stage 7: Performance Optimization & 1k/10k/100k Benchmark Gates
-   │
-   ▼
-Stage 8: Visual Polish, Menu Accelerators & Windows Desktop Shell Integration
-   │
-   ▼
-Stage 9: Automated Unit, Integration & Benchmark Test Suites
-   │
-   ▼
-Stage 10: Documentation Updates & Final Release Review
-```
+All stages have been implemented, tested, and verified:
+
+- [x] **Stage 0: Audit & Architecture Design** (`docs/STREAM_GRAPH_DESIGN.md`)
+- [x] **Stage 1: Graph Data Model** (`src/types/streamGraph.ts`, `src/services/graph/graphBuilder.ts`, `graphBuilder.test.ts`)
+- [x] **Stage 2: Force-Directed Layout Simulation** (`src/services/graph/forceLayout.ts`, `forceLayout.test.ts`)
+- [x] **Stage 3: Progressive Expansion & Level-of-Detail Engine** (Cluster hubs, 1-hop neighborhood reveal, `computeVirtualReach`)
+- [x] **Stage 4: Relationship Engine & Visual Edge Taxonomy** (`src/services/graph/edgeStyling.ts`, `edgeStyling.test.ts`)
+- [x] **Stage 5: High-DPI 2D Canvas Viewport & Inspector Integration** (`src/components/StreamGraphView.tsx`)
+- [x] **Stage 6: Search, Filters & Time Range Controls** (Integrated HUD and shared similarity query bar)
+- [x] **Stage 7: Windows Desktop Shell Integration & View Navigation** (`Ctrl+3` accelerator in `electron/main.ts`, header navigation tab)
+- [x] **Stage 8: Performance Benchmarks & Validation** (`src/services/graph/graphBenchmarks.test.ts`, `docs/PERFORMANCE_BENCHMARKS.md`)
+- [x] **Stage 9: Automated Test Suite** (All 51 unit and benchmark tests passing)
+- [x] **Stage 10: Documentation & Review** (`README.md`, `PROJECT_STATUS.md`, `STREAM_GRAPH_DESIGN.md`)

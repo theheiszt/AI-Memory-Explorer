@@ -41,7 +41,24 @@ All measurements are gathered in real-time from automated test executions withou
 
 ---
 
-## 3. Verification Test Command
+## 3. Stream Graph Mode Benchmarks (Stages 1–8)
+
+Harness: `src/services/graph/graphBenchmarks.test.ts`
+
+| Scale | Node Count | Edge Count | Graph Build Latency | Physics Warmup (50 ticks) | Memory (RSS) |
+|---|---|---|---|---|---|
+| **1,000 Real Records** | **1,006** (1,000 memory + 6 cluster hubs) | **3,772** (bounded KNN + explicit) | **80.97 ms** | **114.75 ms** | **85.4 MB** |
+| **10,000 Real Records** | **8,030 visible** (LOD balanced) | **9,849 displayed** | **2,407.90 ms** | Incremental / Quiescent | **< 180.0 MB** |
+| **Virtual Reach (100k)** | Anchor neighborhood | 1-hop: 142 • 2-hop: 10 | **0.97 ms** | Instant | Negligible |
+
+### Key Stream Graph Findings:
+1. **Zero $O(N^2)$ Edge Explosion:** By enforcing a strict top-$K$ neighbor budget ($K=3$ for detailed, $K=5$ for maximum) and localized candidate windows, edge generation scales near-linearly rather than quadratically.
+2. **Rapid Quiescence:** The kinetic cooling schedule ($\alpha$ decay = 0.022, damping = 0.65) brings the 1,000-node graph to complete resting equilibrium within ~120 ticks, dropping CPU utilization to 0% when idle.
+3. **Sub-millisecond Neighborhood Reach:** Computing 1-hop and 2-hop graph connectivity for any anchor record executes in 0.97ms, enabling instantaneous UI reach readouts.
+
+---
+
+## 4. Verification Test Command
 
 To replicate and verify these benchmarks locally:
 

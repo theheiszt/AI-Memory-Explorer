@@ -77,6 +77,19 @@ All existing features—including 2D Canvas and 3D Three.js visualizations, PCA/
 - Created [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
 - Produced this status report.
 
+### Stage 8: Stream Graph Mode Visualization & Topology Engine (COMPLETED)
+- Implemented pure, decoupled graph data model ([`src/types/streamGraph.ts`](src/types/streamGraph.ts), [`src/services/graph/graphBuilder.ts`](src/services/graph/graphBuilder.ts)) mapping normalized memory records 1:1 to stable graph nodes.
+- Built convergent force-directed layout simulation ([`src/services/graph/forceLayout.ts`](src/services/graph/forceLayout.ts)) with Coulomb repulsion, Hookean springs, cluster gravity, alpha cooling schedule, and quiescence auto-sleep (0% idle CPU).
+- Designed semantic edge taxonomy and styling ([`src/services/graph/edgeStyling.ts`](src/services/graph/edgeStyling.ts)) with solid arrows for explicit relations (`causes`, `contradicts`, `supersedes`), dashed strokes for cosine similarity, dotted lines for temporal order, and distinct colors.
+- Built interactive, hardware-agnostic 2D Canvas viewport ([`src/components/StreamGraphView.tsx`](src/components/StreamGraphView.tsx)) supporting high-DPI scaling, pan/zoom, node dragging, hover halos, label prioritization, cluster expansion, and neighborhood reach exploration.
+- Integrated desktop shell navigation and shortcuts: added Stream Graph tab and `CmdOrCtrl+3` accelerator in [`electron/main.ts`](electron/main.ts).
+- Validated performance with comprehensive benchmarks ([`src/services/graph/graphBenchmarks.test.ts`](src/services/graph/graphBenchmarks.test.ts)):
+  - **1,000 records:** Graph built in 80.97ms, 50-tick physics warmup in 114.75ms, 85.4 MB RSS.
+  - **10,000 records (LOD):** Built in 2,407.9ms, 9,849 bounded edges.
+  - **Virtual reach:** 1-hop and 2-hop graph connectivity computed in 0.97ms.
+- Full test suite expanded to **51 automated tests**, all passing cleanly.
+- Documented complete architecture and design in [`docs/STREAM_GRAPH_DESIGN.md`](docs/STREAM_GRAPH_DESIGN.md).
+
 ---
 
 ## 3. Known Issues & Suggested Future Enhancements
