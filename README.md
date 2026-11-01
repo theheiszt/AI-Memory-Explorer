@@ -163,4 +163,4 @@ Your support directly funds open-source AI tooling, local inference performance 
 
 ## License
 
-Copyright © 2026 AI Memory Explorer Team. Distributed under the MIT License.
+Copyright © 2026. Distributed under the MIT License.
