@@ -7,7 +7,8 @@
 
 **AI Memory Explorer** is a provider-independent semantic inspection workspace and multidimensional vector landscape for AI agent memories. It converts high-dimensional latent memory spaces into interactive 2D, 3D, and force-directed graph manifolds, enabling developers, researchers, and operators to inspect agent recall, analyze semantic clustering, audit knowledge drift, and compare memory snapshots over time.
 
----
+<img src="./Screenshot%202026-10-28%20194724.jpg" alt="Screenshot" width="900" />---
+![Screenshot](https://raw.githubusercontent.com/theheiszt/AI-Memory-Explorer/main/Screenshot%202026-10-28%20172124.jpg)
 
 ## Key Features
 
